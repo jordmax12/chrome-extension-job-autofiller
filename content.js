@@ -157,7 +157,8 @@ class JobApplicationDetector {
         const knownJobApplicationDomains = [
             'jobs.ashbyhq.com',
             '*.myworkdayjobs.com',
-            '*.smartapply.indeed.com'
+            '*.smartapply.indeed.com',
+            '*.greenhouse.io'
         ];
 
         console.log('here2!')
