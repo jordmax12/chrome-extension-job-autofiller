@@ -155,12 +155,20 @@ class JobApplicationDetector {
         
         // Domains we know for sure are job applications
         const knownJobApplicationDomains = [
-            'jobs.ashbyhq.com'
+            'jobs.ashbyhq.com',
+            '*.myworkdayjobs.com'  // Wildcard domain
         ];
 
-        const isKnownJobApplicationDomain = knownJobApplicationDomains.some(domain => 
-            hostname === domain || hostname.endsWith('.' + domain)
-        );
+        const isKnownJobApplicationDomain = knownJobApplicationDomains.some(domain => {
+            if (domain.startsWith('*.')) {
+                // Handle wildcard domains like *.myworkdayjobs.com
+                const baseDomain = domain.substring(2); // Remove '*.'
+                return hostname === baseDomain || hostname.endsWith('.' + baseDomain);
+            } else {
+                // Handle exact domains like jobs.ashbyhq.com
+                return hostname === domain || hostname.endsWith('.' + domain);
+            }
+        });
         
         if (isKnownJobApplicationDomain) {
             this.confidence += 100; // Very high confidence boost
