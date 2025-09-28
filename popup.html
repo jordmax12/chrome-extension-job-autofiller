@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 300px;
-      height: 200px;
+      width: 350px;
+      min-height: 300px;
       padding: 20px;
       margin: 0;
       font-family: Arial, sans-serif;
@@ -13,29 +13,145 @@
     }
     
     .container {
-      text-align: center;
-      height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
+      gap: 15px;
     }
     
     h1 {
       color: #333;
-      margin-bottom: 20px;
-      font-size: 24px;
+      margin: 0;
+      font-size: 20px;
+      text-align: center;
+    }
+    
+    .status-section {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #ccc;
+    }
+    
+    .status-dot.detected {
+      background-color: #4CAF50;
+    }
+    
+    .status-dot.platform-detected {
+      background-color: #4CAF50;
+      box-shadow: 0 0 10px #4CAF50;
+      animation: glow 2s infinite;
+    }
+    
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px #4CAF50; }
+      50% { box-shadow: 0 0 15px #4CAF50, 0 0 20px #4CAF50; }
+    }
+    
+    .status-dot.not-detected {
+      background-color: #f44336;
+    }
+    
+    .status-dot.checking {
+      background-color: #ff9800;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    .confidence-bar {
+      position: relative;
+      background-color: #e0e0e0;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f44336 0%, #ff9800 50%, #4CAF50 100%);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    
+    .confidence-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .details-section {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .details-section h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .details-section ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 12px;
+    }
+    
+    .details-section li {
+      margin-bottom: 5px;
+      color: #666;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    
+    .action-btn, .close-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    
+    .action-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    
+    .action-btn:hover {
+      background-color: #1976D2;
     }
     
     .close-btn {
       background-color: #4CAF50;
       color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 20px;
     }
     
     .close-btn:hover {
@@ -45,9 +161,28 @@
 </head>
 <body>
   <div class="container">
-    <h1>Hello World!</h1>
-    <p>Welcome to your first Chrome extension!</p>
-    <button class="close-btn" id="closeBtn">Close</button>
+    <h1>Job Application Detector</h1>
+    
+    <div class="status-section">
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Checking...</span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill"></div>
+        <span class="confidence-text" id="confidenceText">0%</span>
+      </div>
+    </div>
+    
+    <div class="details-section" id="detailsSection" style="display: none;">
+      <h3>Detected Fields:</h3>
+      <ul id="fieldsList"></ul>
+    </div>
+    
+    <div class="actions">
+      <button class="action-btn" id="refreshBtn">Refresh</button>
+      <button class="close-btn" id="closeBtn">Close</button>
+    </div>
   </div>
   
   <script src="popup.js"></script>

@@ -1,11 +1,26 @@
 {
     "manifest_version": 3,
-    "name": "Simple Chrome Extension",
+    "name": "Job Application Detector",
     "version": "1.0.0",
-    "description": "A simple Chrome extension with Hello World popup",
+    "description": "Detects and helps fill job application forms",
+    "permissions": [
+        "activeTab",
+        "storage"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
     "action": {
         "default_popup": "popup.html",
-        "default_title": "Simple Extension",
+        "default_title": "Job Application Detector",
         "default_icon": {
             "16": "icon16.png",
             "48": "icon48.png"
