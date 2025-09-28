@@ -156,7 +156,8 @@ class JobApplicationDetector {
         // Domains we know for sure are job applications
         const knownJobApplicationDomains = [
             'jobs.ashbyhq.com',
-            '*.myworkdayjobs.com'  // Wildcard domain.
+            '*.myworkdayjobs.com',
+            '*.smartapply.indeed.com'
         ];
 
         console.log('here2!')
