@@ -38,6 +38,15 @@ chrome-job-auto-filler/
 - A popup will appear showing "Hello World!"
 - Click the "Close" button to close the popup
 
+## Development
+
+For faster development with live reload:
+```bash
+npm install
+npm run dev
+```
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions.
+
 ## Next Steps
 
 This is a basic foundation. You can now:

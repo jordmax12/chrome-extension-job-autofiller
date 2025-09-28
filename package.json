@@ -1,0 +1,20 @@
+{
+    "name": "chrome-job-auto-filler",
+    "version": "1.0.0",
+    "description": "Chrome extension for job application detection and auto-filling",
+    "scripts": {
+        "dev": "node dev-server.js",
+        "watch": "node dev-server.js"
+    },
+    "devDependencies": {
+        "chokidar": "^3.5.3",
+        "ws": "^8.14.2"
+    },
+    "keywords": [
+        "chrome-extension",
+        "job-application",
+        "auto-fill"
+    ],
+    "author": "Jordan",
+    "license": "MIT"
+}

@@ -156,8 +156,10 @@ class JobApplicationDetector {
         // Domains we know for sure are job applications
         const knownJobApplicationDomains = [
             'jobs.ashbyhq.com',
-            '*.myworkdayjobs.com'  // Wildcard domain
+            '*.myworkdayjobs.com'  // Wildcard domain.
         ];
+
+        console.log('here2!')
 
         const isKnownJobApplicationDomain = knownJobApplicationDomains.some(domain => {
             if (domain.startsWith('*.')) {
