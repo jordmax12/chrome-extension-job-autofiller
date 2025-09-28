@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Auto Job Filler - Settings</title>
+  <style>
+    body {
+      width: 500px;
+      min-height: 600px;
+      padding: 20px;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      color: #333;
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .header p {
+      color: #666;
+      margin: 8px 0 0 0;
+      font-size: 14px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .file-upload-section {
+      margin: 25px 0;
+      padding: 20px;
+      border: 2px dashed #e1e5e9;
+      border-radius: 8px;
+      text-align: center;
+      transition: border-color 0.3s ease;
+    }
+    
+    .file-upload-section:hover {
+      border-color: #667eea;
+    }
+    
+    .file-upload-section.has-file {
+      border-color: #4CAF50;
+      background-color: #f8fff8;
+    }
+    
+    .file-upload-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .file-upload-input {
+      display: none;
+    }
+    
+    .file-upload-button {
+      background: #667eea;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+    
+    .file-upload-button:hover {
+      background: #5a67d8;
+    }
+    
+    .file-info {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f0f4f8;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .file-name {
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e1e5e9;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #45a049;
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #c3e6cb;
+      display: none;
+    }
+    
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border: 1px solid #f5c6cb;
+      display: none;
+    }
+    
+    .storage-info {
+      background: #e7f3ff;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #0066cc;
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Auto Job Filler Settings</h1>
+      <p>Configure your personal information for auto-filling job applications</p>
+    </div>
+    
+    <div class="success-message" id="successMessage">
+      ✅ Settings saved successfully!
+    </div>
+    
+    <div class="error-message" id="errorMessage">
+      ❌ Error saving settings. Please try again.
+    </div>
+    
+    <form id="settingsForm">
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input type="text" id="firstName" name="firstName" placeholder="Enter your first name">
+      </div>
+      
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" name="lastName" placeholder="Enter your last name">
+      </div>
+      
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email address">
+      </div>
+      
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="phone" placeholder="Enter your phone number">
+      </div>
+      
+      <div class="file-upload-section" id="resumeUploadSection">
+        <label class="file-upload-label">Resume/CV</label>
+        <input type="file" id="resumeFile" class="file-upload-input" accept=".pdf,.doc,.docx">
+        <button type="button" class="file-upload-button" onclick="document.getElementById('resumeFile').click()">
+          Choose Resume File
+        </button>
+        <div class="file-info" id="fileInfo" style="display: none;">
+          <div class="file-name" id="fileName"></div>
+          <div id="fileSize"></div>
+          <div>File stored locally in extension</div>
+        </div>
+      </div>
+      
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Settings</button>
+        <button type="button" class="btn btn-secondary" id="clearBtn">Clear All</button>
+        <button type="button" class="btn btn-danger" id="closeBtn">Close</button>
+      </div>
+    </form>
+    
+    <div class="storage-info">
+      💾 All data is stored locally in your browser and never sent to external servers
+    </div>
+  </div>
+  
+  <script src="settings.js"></script>
+</body>
+</html>
