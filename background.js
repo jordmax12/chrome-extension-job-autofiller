@@ -27,25 +27,32 @@ function connectToDevServer() {
         };
         
         devSocket.onclose = () => {
-            console.log('📡 Dev server connection closed');
+            // Silently handle connection close and try to reconnect
             devSocket = null;
-            
-            // Try to reconnect after 2 seconds
             setTimeout(connectToDevServer, 2000);
         };
         
-        devSocket.onerror = (error) => {
-            console.log('⚠️  Dev server not available (this is normal in production)');
+        devSocket.onerror = () => {
+            // Silently handle connection errors - no console output
             devSocket = null;
         };
         
     } catch (error) {
-        console.log('⚠️  Could not connect to dev server (this is normal in production)');
+        // Silently handle any connection errors
+        devSocket = null;
     }
 }
 
-// Connect to dev server on startup
-connectToDevServer();
+// Connect to dev server on startup (only in development)
+// Check if we're in development mode by looking for unpacked extension
+chrome.management.getSelf((extensionInfo) => {
+    if (extensionInfo.installType === 'development') {
+        console.log('🔧 Development mode detected - enabling live reload');
+        connectToDevServer();
+    } else {
+        console.log('📦 Production mode - live reload disabled');
+    }
+});
 
 // Extension installation/update handler
 chrome.runtime.onInstalled.addListener((details) => {

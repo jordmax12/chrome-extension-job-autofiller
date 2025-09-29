@@ -5,7 +5,8 @@
     "description": "Detects and helps fill job application forms",
     "permissions": [
         "activeTab",
-        "storage"
+        "storage",
+        "management"
     ],
     "background": {
         "service_worker": "background.js"
