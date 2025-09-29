@@ -83,24 +83,26 @@ class JobApplicationDetector {
         if (forms.length === 0) return;
 
         const jobFieldPatterns = [
-            // Name fields
-            { pattern: /first.?name|fname|given.?name/i, type: 'firstName', weight: 5 },
-            { pattern: /last.?name|lname|surname|family.?name/i, type: 'lastName', weight: 5 },
-            { pattern: /full.?name|name/i, type: 'fullName', weight: 3 },
+            // High-weight personal info fields (strong indicators)
+            { pattern: /first.?name|fname|given.?name/i, type: 'firstName', weight: 12 },
+            { pattern: /last.?name|lname|surname|family.?name/i, type: 'lastName', weight: 12 },
+            { pattern: /email|e-mail|email.?address/i, type: 'email', weight: 10 },
+            { pattern: /phone|telephone|mobile|cell|phone.?number/i, type: 'phone', weight: 10 },
             
-            // Contact fields
-            { pattern: /email|e-mail/i, type: 'email', weight: 3 },
-            { pattern: /phone|telephone|mobile|cell/i, type: 'phone', weight: 3 },
-            { pattern: /address|street|city|zip|postal/i, type: 'address', weight: 2 },
+            // Medium-weight personal fields
+            { pattern: /full.?name|name/i, type: 'fullName', weight: 8 },
+            { pattern: /address|street|city|zip|postal/i, type: 'address', weight: 6 },
             
-            // Job-specific fields
+            // High-weight job-specific fields
             { pattern: /resume|cv|curriculum/i, type: 'resume', weight: 15 },
             { pattern: /cover.?letter/i, type: 'coverLetter', weight: 15 },
-            { pattern: /position|job.?title|role/i, type: 'position', weight: 10 },
-            { pattern: /experience|work.?history/i, type: 'experience', weight: 10 },
-            { pattern: /salary|compensation|expected.?pay/i, type: 'salary', weight: 8 },
+            
+            // Medium-weight job fields
+            { pattern: /position|job.?title|role/i, type: 'position', weight: 8 },
+            { pattern: /experience|work.?history/i, type: 'experience', weight: 8 },
+            { pattern: /salary|compensation|expected.?pay/i, type: 'salary', weight: 6 },
             { pattern: /availability|start.?date/i, type: 'availability', weight: 5 },
-            { pattern: /linkedin|portfolio|website/i, type: 'links', weight: 5 }
+            { pattern: /linkedin|portfolio|website/i, type: 'links', weight: 4 }
         ];
 
         forms.forEach(form => {
@@ -131,6 +133,9 @@ class JobApplicationDetector {
 
         if (this.detectedFields.length > 0) {
             console.log('✅ Detected job application fields:', this.detectedFields.map(f => f.type));
+            
+            // Bonus scoring for personal info field combinations
+            this.applyPersonalInfoBonus();
         }
     }
 
@@ -147,6 +152,46 @@ class JobApplicationDetector {
         if (isJobSite) {
             this.confidence += 25;
             console.log('✅ Detected known job site:', hostname);
+        }
+    }
+
+    applyPersonalInfoBonus() {
+        const detectedTypes = this.detectedFields.map(field => field.type);
+        const personalFields = {
+            firstName: detectedTypes.includes('firstName'),
+            lastName: detectedTypes.includes('lastName'),
+            email: detectedTypes.includes('email'),
+            phone: detectedTypes.includes('phone'),
+            fullName: detectedTypes.includes('fullName')
+        };
+
+        let bonusPoints = 0;
+        let bonusReason = '';
+
+        // Check for strong personal info combinations
+        if (personalFields.firstName && personalFields.lastName && personalFields.email) {
+            bonusPoints = 25;
+            bonusReason = 'First Name + Last Name + Email combination';
+        } else if (personalFields.fullName && personalFields.email) {
+            bonusPoints = 20;
+            bonusReason = 'Full Name + Email combination';
+        } else if (personalFields.firstName && personalFields.lastName) {
+            bonusPoints = 15;
+            bonusReason = 'First Name + Last Name combination';
+        } else if (personalFields.email && personalFields.phone) {
+            bonusPoints = 15;
+            bonusReason = 'Email + Phone combination';
+        }
+
+        // Additional bonus for having all four main personal fields
+        if (personalFields.firstName && personalFields.lastName && personalFields.email && personalFields.phone) {
+            bonusPoints += 10;
+            bonusReason += ' + All four personal fields bonus';
+        }
+
+        if (bonusPoints > 0) {
+            this.confidence += bonusPoints;
+            console.log(`🎯 Personal info bonus: +${bonusPoints} points (${bonusReason})`);
         }
     }
 
