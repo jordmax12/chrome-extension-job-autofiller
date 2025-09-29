@@ -164,6 +164,20 @@
       background-color: #1976D2;
     }
     
+    .autofill-btn {
+      background-color: #9c27b0;
+      color: white;
+    }
+    
+    .autofill-btn:hover {
+      background-color: #7b1fa2;
+    }
+    
+    .autofill-btn:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
     .settings-btn {
       background-color: #ff9800;
       color: white;
@@ -386,6 +400,7 @@
       
       <div class="actions">
         <button class="action-btn" id="refreshBtn">Refresh</button>
+        <button class="autofill-btn" id="autofillBtn">Autofill</button>
         <button class="settings-btn" id="settingsBtn">Settings</button>
         <button class="close-btn" id="closeBtn">Close</button>
       </div>

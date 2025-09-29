@@ -336,6 +336,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.type === 'RERUN_DETECTION') {
         detector.detectJobApplication();
         sendResponse({ success: true });
+    } else if (request.type === 'PERFORM_AUTOFILL') {
+        console.log('🎯 AUTOFILL REQUESTED from popup!');
+        console.log('📋 Available fields for autofill:', detector.detectedFields.map(f => f.type));
+        console.log('🔍 Confidence level:', detector.confidence + '%');
+        
+        // TODO: Implement actual autofill logic here
+        console.log('⚠️  Autofill functionality coming soon!');
+        
+        sendResponse({ 
+            success: true, 
+            message: 'Autofill request received',
+            detectedFields: detector.detectedFields.length,
+            confidence: detector.confidence
+        });
     }
 });
 

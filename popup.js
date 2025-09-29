@@ -13,6 +13,7 @@ class PopupController {
             detailsSection: document.getElementById('detailsSection'),
             fieldsList: document.getElementById('fieldsList'),
             refreshBtn: document.getElementById('refreshBtn'),
+            autofillBtn: document.getElementById('autofillBtn'),
             settingsBtn: document.getElementById('settingsBtn'),
             closeBtn: document.getElementById('closeBtn'),
             settingsStatus: document.getElementById('settingsStatus'),
@@ -58,6 +59,7 @@ class PopupController {
         }
         // Set up event listeners
         this.elements.refreshBtn.addEventListener('click', () => this.refreshDetection());
+        this.elements.autofillBtn.addEventListener('click', () => this.handleAutofill());
         this.elements.settingsBtn.addEventListener('click', () => this.showSettings());
         this.elements.backBtn.addEventListener('click', () => this.showMainView());
         this.elements.closeBtn.addEventListener('click', () => window.close());
@@ -162,6 +164,15 @@ class PopupController {
         // Update confidence bar
         this.elements.confidenceFill.style.width = `${confidence}%`;
         this.elements.confidenceText.textContent = `${confidence}%`;
+
+        // Update autofill button state
+        if (isJobApplication || isKnownJobApplicationDomain) {
+            this.elements.autofillBtn.disabled = false;
+            this.elements.autofillBtn.textContent = 'Autofill';
+        } else {
+            this.elements.autofillBtn.disabled = true;
+            this.elements.autofillBtn.textContent = 'No Job Detected';
+        }
 
         // Update detected fields
         if (detectedFields && detectedFields.length > 0) {
@@ -467,6 +478,29 @@ class PopupController {
         this.elements.settingsStatus.style.display = 'block';
         
         console.log('Settings status updated:', timeText);
+    }
+
+    async handleAutofill() {
+        console.log('🚀 Autofill button clicked!');
+        
+        try {
+            // Get current tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // Send message to content script to perform autofill
+            chrome.tabs.sendMessage(tab.id, { 
+                type: 'PERFORM_AUTOFILL'
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('Error sending autofill message:', chrome.runtime.lastError.message);
+                } else {
+                    console.log('Autofill message sent successfully');
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error in handleAutofill:', error);
+        }
     }
 
     // Debug helper function
