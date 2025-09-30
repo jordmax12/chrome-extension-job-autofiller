@@ -79,56 +79,147 @@ class JobApplicationDetector {
     }
 
     detectByFormFields() {
-        const forms = document.querySelectorAll('form');
-        if (forms.length === 0) return;
-
+        console.log('🔍 Starting field detection...');
+        
+        // First, let's directly check for the specific fields we know exist
+        const directFieldCheck = {
+            firstName: document.getElementById('first_name'),
+            lastName: document.getElementById('last_name'),
+            email: document.getElementById('email'),
+            phone: document.getElementById('phone')
+        };
+        
+        console.log('🎯 Direct field check results:', directFieldCheck);
+        
+        // Add directly found fields
+        Object.entries(directFieldCheck).forEach(([type, element]) => {
+            if (element) {
+                console.log(`✅ Found ${type} directly by ID:`, element);
+                this.detectedFields.push({
+                    type,
+                    element,
+                    identifier: `direct-${element.id}`,
+                    weight: 15
+                });
+                this.confidence += 15;
+            }
+        });
+        
+        // Also scan ALL input fields on the page (not just in forms)
+        const allInputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="password"], textarea');
+        console.log(`🔍 Found ${allInputs.length} total input fields on page:`);
+        allInputs.forEach((input, index) => {
+            console.log(`  Input ${index + 1}:`, {
+                id: input.id,
+                name: input.name,
+                type: input.type,
+                placeholder: input.placeholder,
+                'aria-label': input.getAttribute('aria-label'),
+                className: input.className,
+                tagName: input.tagName
+            });
+        });
+        
         const jobFieldPatterns = [
-            // High-weight personal info fields (strong indicators)
-            { pattern: /first.?name|fname|given.?name/i, type: 'firstName', weight: 12 },
-            { pattern: /last.?name|lname|surname|family.?name/i, type: 'lastName', weight: 12 },
-            { pattern: /email|e-mail|email.?address/i, type: 'email', weight: 10 },
-            { pattern: /phone|telephone|mobile|cell|phone.?number/i, type: 'phone', weight: 10 },
+            // High-weight personal info fields (strong indicators) - more comprehensive patterns
+            { 
+                pattern: /first.?name|fname|given.?name|first_name|first$/i, 
+                type: 'firstName', 
+                weight: 12,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /last.?name|lname|surname|family.?name|last_name|last$/i, 
+                type: 'lastName', 
+                weight: 12,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /^email$|e-mail|email.?address|mail$|email_address/i, 
+                type: 'email', 
+                weight: 10,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'type', 'class']
+            },
+            { 
+                pattern: /^phone$|telephone|mobile|cell|phone.?number|tel$|phone_number/i, 
+                type: 'phone', 
+                weight: 10,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'type', 'class']
+            },
             
             // Medium-weight personal fields
-            { pattern: /full.?name|name/i, type: 'fullName', weight: 8 },
-            { pattern: /address|street|city|zip|postal/i, type: 'address', weight: 6 },
+            { 
+                pattern: /full.?name|^name$|applicant.?name|your.?name/i, 
+                type: 'fullName', 
+                weight: 8,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /address|street|city|zip|postal/i, 
+                type: 'address', 
+                weight: 6,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
             
             // High-weight job-specific fields
-            { pattern: /resume|cv|curriculum/i, type: 'resume', weight: 15 },
-            { pattern: /cover.?letter/i, type: 'coverLetter', weight: 15 },
+            { 
+                pattern: /resume|cv|curriculum/i, 
+                type: 'resume', 
+                weight: 15,
+                checkAttributes: ['id', 'name', 'data-testid', 'aria-label', 'class']
+            },
+            { 
+                pattern: /cover.?letter/i, 
+                type: 'coverLetter', 
+                weight: 15,
+                checkAttributes: ['id', 'name', 'data-testid', 'aria-label', 'class']
+            },
             
             // Medium-weight job fields
-            { pattern: /position|job.?title|role/i, type: 'position', weight: 8 },
-            { pattern: /experience|work.?history/i, type: 'experience', weight: 8 },
-            { pattern: /salary|compensation|expected.?pay/i, type: 'salary', weight: 6 },
-            { pattern: /availability|start.?date/i, type: 'availability', weight: 5 },
-            { pattern: /linkedin|portfolio|website/i, type: 'links', weight: 4 }
+            { 
+                pattern: /position|job.?title|role/i, 
+                type: 'position', 
+                weight: 8,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /experience|work.?history/i, 
+                type: 'experience', 
+                weight: 8,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /salary|compensation|expected.?pay/i, 
+                type: 'salary', 
+                weight: 6,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /availability|start.?date/i, 
+                type: 'availability', 
+                weight: 5,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /linkedin|portfolio|website/i, 
+                type: 'links', 
+                weight: 4,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            }
         ];
+
+        const forms = document.querySelectorAll('form');
+        console.log(`📋 Found ${forms.length} forms on page`);
+        if (forms.length === 0) {
+            console.log('⚠️ No forms found, but continuing with all inputs...');
+            // If no forms, process all inputs directly
+            this.processInputs(allInputs, jobFieldPatterns);
+            return;
+        }
 
         forms.forEach(form => {
             const inputs = form.querySelectorAll('input, textarea, select');
-            
-            inputs.forEach(input => {
-                const fieldIdentifiers = [
-                    input.name,
-                    input.id,
-                    input.placeholder,
-                    input.getAttribute('aria-label'),
-                    this.getLabelText(input)
-                ].filter(Boolean).join(' ').toLowerCase();
-
-                jobFieldPatterns.forEach(({ pattern, type, weight }) => {
-                    if (pattern.test(fieldIdentifiers)) {
-                        this.detectedFields.push({
-                            type,
-                            element: input,
-                            identifier: fieldIdentifiers,
-                            weight
-                        });
-                        this.confidence += weight;
-                    }
-                });
-            });
+            this.processInputs(inputs, jobFieldPatterns);
         });
 
         if (this.detectedFields.length > 0) {
@@ -137,6 +228,77 @@ class JobApplicationDetector {
             // Bonus scoring for personal info field combinations
             this.applyPersonalInfoBonus();
         }
+    }
+
+    processInputs(inputs, jobFieldPatterns) {
+        inputs.forEach(input => {
+            console.log(`\n🔍 Analyzing input element:`, {
+                tagName: input.tagName,
+                type: input.type,
+                id: input.id,
+                name: input.name,
+                placeholder: input.placeholder,
+                'aria-label': input.getAttribute('aria-label'),
+                class: input.className
+            });
+
+            jobFieldPatterns.forEach(({ pattern, type, weight, checkAttributes }) => {
+                // Build field identifiers from specified attributes
+                const fieldIdentifiers = [];
+                
+                checkAttributes.forEach(attr => {
+                    let value = '';
+                    switch(attr) {
+                        case 'id':
+                            value = input.id;
+                            break;
+                        case 'name':
+                            value = input.name;
+                            break;
+                        case 'placeholder':
+                            value = input.placeholder;
+                            break;
+                        case 'aria-label':
+                            value = input.getAttribute('aria-label');
+                            break;
+                        case 'data-testid':
+                            value = input.getAttribute('data-testid');
+                            break;
+                        case 'type':
+                            value = input.type;
+                            break;
+                        case 'class':
+                            value = input.className;
+                            break;
+                        default:
+                            value = input.getAttribute(attr);
+                    }
+                    if (value) {
+                        fieldIdentifiers.push(value);
+                    }
+                });
+                
+                // Also include label text
+                const labelText = this.getLabelText(input);
+                if (labelText) {
+                    fieldIdentifiers.push(labelText);
+                }
+                
+                const combinedIdentifiers = fieldIdentifiers.join(' ').toLowerCase();
+                console.log(`  Testing ${type} pattern against: "${combinedIdentifiers}"`);
+                
+                if (pattern.test(combinedIdentifiers)) {
+                    console.log(`  ✅ MATCH! Found ${type} field`);
+                    this.detectedFields.push({
+                        type,
+                        element: input,
+                        identifier: combinedIdentifiers,
+                        weight
+                    });
+                    this.confidence += weight;
+                }
+            });
+        });
     }
 
     detectByJobSites() {
@@ -316,6 +478,168 @@ class JobApplicationDetector {
             // Popup might not be open, that's okay
         });
     }
+
+    async performAutofill() {
+        console.log('🚀 Starting simple autofill...');
+        
+        try {
+            // Get user settings
+            const result = await chrome.storage.local.get(['userSettings']);
+            if (!result.userSettings) {
+                throw new Error('No user settings found. Please configure your information in Settings first.');
+            }
+            
+            const userSettings = result.userSettings;
+            console.log('👤 User data:', {
+                firstName: userSettings.firstName,
+                lastName: userSettings.lastName,
+                email: userSettings.email,
+                phone: userSettings.phone
+            });
+            
+            const filledFields = [];
+            const skippedFields = [];
+            
+            // Simple field mapping - just look for these exact IDs
+            const fieldMap = {
+                'first_name': userSettings.firstName,
+                'last_name': userSettings.lastName,
+                'email': userSettings.email,
+                'phone': userSettings.phone
+            };
+            
+            // Try to fill each field
+            Object.entries(fieldMap).forEach(([fieldId, value]) => {
+                console.log(`\n🔍 Looking for field: ${fieldId}`);
+                
+                if (!value) {
+                    console.log(`⏭️ No value for ${fieldId}`);
+                    skippedFields.push({ type: fieldId, reason: 'No data available' });
+                    return;
+                }
+                
+                const element = document.getElementById(fieldId);
+                if (!element) {
+                    console.log(`❌ Element not found: ${fieldId}`);
+                    skippedFields.push({ type: fieldId, reason: 'Element not found' });
+                    return;
+                }
+                
+                console.log(`✅ Found element: ${fieldId}`, element);
+                
+                try {
+                    // Simple fill
+                    element.focus();
+                    element.value = value;
+                    
+                    // Trigger events
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    filledFields.push({
+                        type: fieldId,
+                        value: value,
+                        element: element.tagName.toLowerCase()
+                    });
+                    
+                    console.log(`✅ Filled ${fieldId}: "${value}"`);
+                    
+                } catch (error) {
+                    console.error(`❌ Failed to fill ${fieldId}:`, error);
+                    skippedFields.push({ type: fieldId, reason: error.message });
+                }
+            });
+            
+            return {
+                success: true,
+                message: 'Simple autofill completed',
+                filledFields: filledFields,
+                skippedFields: skippedFields
+            };
+            
+        } catch (error) {
+            console.error('❌ Autofill failed:', error);
+            throw error;
+        }
+    }
+
+
+    fillField(element, value) {
+        // Focus the element first
+        element.focus();
+        
+        // Clear existing value
+        element.value = '';
+        
+        // Set the new value
+        element.value = value;
+        
+        // Trigger events to notify the page that the field was changed
+        const events = ['input', 'change', 'keyup', 'blur'];
+        events.forEach(eventType => {
+            const event = new Event(eventType, { bubbles: true, cancelable: true });
+            element.dispatchEvent(event);
+        });
+        
+        // For React/Vue applications, also trigger a more comprehensive input event
+        const inputEvent = new Event('input', { bubbles: true });
+        Object.defineProperty(inputEvent, 'target', { value: element, enumerable: true });
+        element.dispatchEvent(inputEvent);
+        
+        // Add visual feedback
+        this.addVisualFeedback(element);
+    }
+
+    isFieldVisible(element) {
+        if (!element) {
+            console.log('Element is null/undefined');
+            return false;
+        }
+        
+        const style = window.getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        
+        console.log(`Checking visibility for ${element.tagName} (id: ${element.id}):`, {
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            offsetWidth: element.offsetWidth,
+            offsetHeight: element.offsetHeight,
+            rect: {width: rect.width, height: rect.height, top: rect.top, left: rect.left},
+            inViewport: rect.top >= 0 && rect.left >= 0
+        });
+        
+        // VERY lenient visibility check - basically only exclude completely hidden elements
+        const isDisplayed = style.display !== 'none';
+        const isVisible = style.visibility !== 'hidden';
+        const hasOpacity = parseFloat(style.opacity) > 0; // Any opacity > 0
+        
+        // Check if element has any size OR is positioned on screen
+        const hasSize = element.offsetWidth > 0 && element.offsetHeight > 0;
+        const hasPosition = rect.width > 0 || rect.height > 0;
+        
+        const visible = isDisplayed && isVisible && hasOpacity && (hasSize || hasPosition);
+        console.log(`Element visibility result: ${visible}`);
+        
+        // If still not visible but the element clearly exists, let's be even more lenient
+        if (!visible && element.id && (element.id.includes('first_name') || element.id.includes('last_name') || element.id.includes('email') || element.id.includes('phone'))) {
+            console.log(`🔧 OVERRIDE: Element ${element.id} exists and is a key field, treating as visible`);
+            return true;
+        }
+        
+        return visible;
+    }
+
+    addVisualFeedback(element) {
+        // Add a temporary green border to show the field was filled
+        const originalBorder = element.style.border;
+        element.style.border = '2px solid #4CAF50';
+        element.style.transition = 'border 0.3s ease';
+        
+        setTimeout(() => {
+            element.style.border = originalBorder;
+        }, 2000);
+    }
 }
 
 // Initialize the detector
@@ -323,7 +647,10 @@ const detector = new JobApplicationDetector();
 
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.type === 'GET_DETECTION_STATUS') {
+    if (request.type === 'PING') {
+        // Simple ping/pong to check if content script is ready
+        sendResponse({ status: 'ready' });
+    } else if (request.type === 'GET_DETECTION_STATUS') {
         sendResponse({
             isJobApplication: detector.isJobApplication,
             confidence: detector.confidence,
@@ -337,19 +664,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         detector.detectJobApplication();
         sendResponse({ success: true });
     } else if (request.type === 'PERFORM_AUTOFILL') {
-        console.log('🎯 AUTOFILL REQUESTED from popup!');
-        console.log('📋 Available fields for autofill:', detector.detectedFields.map(f => f.type));
-        console.log('🔍 Confidence level:', detector.confidence + '%');
-        
-        // TODO: Implement actual autofill logic here
-        console.log('⚠️  Autofill functionality coming soon!');
-        
-        sendResponse({ 
-            success: true, 
-            message: 'Autofill request received',
-            detectedFields: detector.detectedFields.length,
-            confidence: detector.confidence
+        // Use the new simple autofill method
+        detector.performAutofill().then((result) => {
+            sendResponse(result);
+        }).catch((error) => {
+            console.error('Autofill error:', error);
+            sendResponse({ 
+                success: false, 
+                message: 'Autofill failed: ' + error.message 
+            });
         });
+        
+        return true; // Keep message channel open for async response
     }
 });
 

@@ -483,24 +483,92 @@ class PopupController {
     async handleAutofill() {
         console.log('🚀 Autofill button clicked!');
         
+        // Temporarily disable button and show loading state
+        this.elements.autofillBtn.disabled = true;
+        this.elements.autofillBtn.textContent = 'Filling...';
+        
         try {
             // Get current tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            console.log('Current tab:', tab.url);
             
-            // Send message to content script to perform autofill
+            // First check if content script is ready
             chrome.tabs.sendMessage(tab.id, { 
-                type: 'PERFORM_AUTOFILL'
-            }, (response) => {
+                type: 'PING'
+            }, (pingResponse) => {
                 if (chrome.runtime.lastError) {
-                    console.error('Error sending autofill message:', chrome.runtime.lastError.message);
-                } else {
-                    console.log('Autofill message sent successfully');
+                    console.error('Content script not ready:', chrome.runtime.lastError.message);
+                    console.log('Tab URL:', tab.url);
+                    console.log('Possible causes:');
+                    console.log('1. Page is still loading');
+                    console.log('2. Content script blocked on this page type');
+                    console.log('3. Extension needs to be reloaded');
+                    
+                    this.resetAutofillButton();
+                    
+                    // More specific error messages
+                    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+                        this.showAutofillResult(false, 'Cannot run on Chrome pages');
+                    } else if (tab.url.startsWith('file://')) {
+                        this.showAutofillResult(false, 'Cannot run on local files');
+                    } else {
+                        this.showAutofillResult(false, 'Page not ready - try refreshing');
+                    }
+                    return;
                 }
+                
+                console.log('Content script is ready, proceeding with autofill...');
+                
+                // Now send the actual autofill message
+                chrome.tabs.sendMessage(tab.id, { 
+                    type: 'PERFORM_AUTOFILL'
+                }, (response) => {
+                    this.resetAutofillButton();
+                    
+                    if (chrome.runtime.lastError) {
+                        console.error('Error during autofill:', chrome.runtime.lastError.message);
+                        this.showAutofillResult(false, 'Failed to communicate with page');
+                    } else if (response && response.success) {
+                        console.log('✅ Autofill completed successfully:', response);
+                        this.showAutofillResult(true, `Filled ${response.filledFields.length} fields`);
+                    } else {
+                        console.error('❌ Autofill failed:', response);
+                        this.showAutofillResult(false, response?.message || 'Unknown error');
+                    }
+                });
             });
             
         } catch (error) {
             console.error('Error in handleAutofill:', error);
+            this.resetAutofillButton();
+            this.showAutofillResult(false, 'Unexpected error occurred');
         }
+    }
+
+    resetAutofillButton() {
+        this.elements.autofillBtn.disabled = false;
+        this.elements.autofillBtn.textContent = 'Autofill';
+    }
+
+    showAutofillResult(success, message) {
+        // Temporarily change button text to show result
+        const originalText = this.elements.autofillBtn.textContent;
+        
+        if (success) {
+            this.elements.autofillBtn.textContent = '✅ ' + message;
+            this.elements.autofillBtn.style.backgroundColor = '#4CAF50';
+        } else {
+            this.elements.autofillBtn.textContent = '❌ ' + message;
+            this.elements.autofillBtn.style.backgroundColor = '#f44336';
+        }
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+            this.elements.autofillBtn.textContent = originalText;
+            this.elements.autofillBtn.style.backgroundColor = '';
+        }, 3000);
+        
+        console.log(`Autofill result: ${success ? 'SUCCESS' : 'FAILED'} - ${message}`);
     }
 
     // Debug helper function
