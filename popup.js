@@ -139,7 +139,7 @@ class PopupController {
     }
 
     updateUI(data) {
-        const { isJobApplication, confidence, detectedFields, isKnownJobApplicationDomain, hostname } = data;
+        const { isJobApplication, confidence, detectedFields, isKnownJobApplicationDomain, hostname, isInIframe, isJobApplicationIframe } = data;
 
         // Update status indicator with special styling for known job application domains
         let statusClass = 'status-dot ';
@@ -153,7 +153,9 @@ class PopupController {
         this.elements.statusDot.className = statusClass;
         
         // Update status text based on detection method
-        if (isKnownJobApplicationDomain) {
+        if (isJobApplicationIframe) {
+            this.elements.statusText.textContent = `Job application iframe detected! (${hostname})`;
+        } else if (isKnownJobApplicationDomain) {
             this.elements.statusText.textContent = `Known job application domain! (${hostname})`;
         } else if (isJobApplication) {
             this.elements.statusText.textContent = 'Job application detected!';
@@ -166,9 +168,13 @@ class PopupController {
         this.elements.confidenceText.textContent = `${confidence}%`;
 
         // Update autofill button state
-        if (isJobApplication || isKnownJobApplicationDomain) {
+        if (isJobApplication || isKnownJobApplicationDomain || isJobApplicationIframe) {
             this.elements.autofillBtn.disabled = false;
-            this.elements.autofillBtn.textContent = 'Autofill';
+            if (isJobApplicationIframe) {
+                this.elements.autofillBtn.textContent = 'Autofill (Iframe)';
+            } else {
+                this.elements.autofillBtn.textContent = 'Autofill';
+            }
         } else {
             this.elements.autofillBtn.disabled = true;
             this.elements.autofillBtn.textContent = 'No Job Detected';

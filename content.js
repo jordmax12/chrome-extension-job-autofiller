@@ -1,11 +1,31 @@
 // Job Application Form Detection Content Script
 
+// Detect if we're in an iframe
+const isInIframe = window !== window.top;
+const isJobApplicationIframe = isInIframe && (
+    window.location.href.includes('greenhouse.io') ||
+    window.location.href.includes('lever.co') ||
+    window.location.href.includes('workday.com') ||
+    window.location.href.includes('smartrecruiters.com') ||
+    window.location.href.includes('bamboohr.com') ||
+    window.location.href.includes('jobvite.com') ||
+    window.location.href.includes('icims.com')
+);
+
+console.log('🔍 Content script loaded:', {
+    isInIframe,
+    isJobApplicationIframe,
+    url: window.location.href
+});
+
 class JobApplicationDetector {
     constructor() {
         this.isJobApplication = false;
         this.detectedFields = [];
         this.confidence = 0;
         this.isKnownJobApplicationDomain = false;
+        this.isInIframe = isInIframe;
+        this.isJobApplicationIframe = isJobApplicationIframe;
         this.init();
     }
 
@@ -22,7 +42,11 @@ class JobApplicationDetector {
     }
 
     detectJobApplication() {
-        console.log('🔍 Scanning page for job application forms...');
+        console.log('🔍 Scanning page for job application forms...', {
+            isInIframe: this.isInIframe,
+            isJobApplicationIframe: this.isJobApplicationIframe,
+            url: window.location.href
+        });
         
         // Reset detection state
         this.isJobApplication = false;
@@ -30,12 +54,23 @@ class JobApplicationDetector {
         this.confidence = 0;
         this.isKnownJobApplicationDomain = false;
 
+        // If we're in a known job application iframe, start with high confidence
+        if (this.isJobApplicationIframe) {
+            console.log('✅ Detected job application iframe!');
+            this.confidence += 95; // Very high confidence for job application iframes
+            this.isKnownJobApplicationDomain = true;
+        }
+
         // Multiple detection methods
         this.detectByURL();
         this.detectByPageContent();
         this.detectByFormFields();
         this.detectByJobSites();
-        this.detectByKnownJobApplicationDomains();
+        
+        // Only check for known domains if we're not already in an iframe
+        if (!this.isInIframe) {
+            this.detectByKnownJobApplicationDomains();
+        }
 
         // Calculate final confidence
         this.calculateConfidence();
@@ -359,6 +394,7 @@ class JobApplicationDetector {
 
     detectByKnownJobApplicationDomains() {
         const hostname = window.location.hostname.toLowerCase();
+        const url = window.location.href.toLowerCase();
         
         // Domains we know for sure are job applications
         const knownJobApplicationDomains = [
@@ -368,8 +404,33 @@ class JobApplicationDetector {
             '*.greenhouse.io'
         ];
 
-        console.log('here2!')
+        // Special cases for major companies with job pages
+        const specialJobPages = [
+            {
+                domain: 'stripe.com',
+                pathPattern: '/jobs/',
+                name: 'Stripe Jobs'
+            },
+            {
+                domain: 'careers.google.com',
+                pathPattern: '/jobs/',
+                name: 'Google Careers'
+            },
+            {
+                domain: 'jobs.netflix.com',
+                pathPattern: '/',
+                name: 'Netflix Jobs'
+            },
+            {
+                domain: 'careers.microsoft.com',
+                pathPattern: '/',
+                name: 'Microsoft Careers'
+            }
+        ];
 
+        console.log('🔍 Checking known job domains and special pages...');
+
+        // Check standard known domains
         const isKnownJobApplicationDomain = knownJobApplicationDomains.some(domain => {
             if (domain.startsWith('*.')) {
                 // Handle wildcard domains like *.myworkdayjobs.com
@@ -381,11 +442,64 @@ class JobApplicationDetector {
             }
         });
         
+        // Check special job pages
+        const matchingSpecialPage = specialJobPages.find(page => {
+            const domainMatch = hostname === page.domain || hostname.endsWith('.' + page.domain);
+            const pathMatch = url.includes(page.pathPattern);
+            return domainMatch && pathMatch;
+        });
+
         if (isKnownJobApplicationDomain) {
             this.confidence += 100; // Very high confidence boost
             this.isKnownJobApplicationDomain = true;
             console.log('✅ Detected known job application domain:', hostname);
+        } else if (matchingSpecialPage) {
+            this.confidence += 90; // High confidence for special job pages
+            this.isKnownJobApplicationDomain = true;
+            console.log('✅ Detected special job page:', matchingSpecialPage.name);
+            
+            // Check for embedded job application iframes
+            this.detectJobApplicationIframes();
         }
+    }
+
+    detectJobApplicationIframes() {
+        console.log('🔍 Checking for embedded job application iframes...');
+        
+        const iframes = document.querySelectorAll('iframe');
+        const jobIframePatterns = [
+            'greenhouse.io',
+            'lever.co',
+            'workday.com',
+            'smartrecruiters.com',
+            'bamboohr.com',
+            'jobvite.com',
+            'icims.com'
+        ];
+
+        iframes.forEach((iframe, index) => {
+            const src = iframe.src?.toLowerCase() || '';
+            console.log(`📋 Iframe ${index + 1}:`, {
+                src: iframe.src,
+                title: iframe.title,
+                id: iframe.id,
+                className: iframe.className
+            });
+
+            const isJobIframe = jobIframePatterns.some(pattern => src.includes(pattern));
+            if (isJobIframe) {
+                this.confidence += 20;
+                console.log('✅ Found job application iframe:', src);
+                
+                // Add a detected field for iframe presence
+                this.detectedFields.push({
+                    type: 'iframe-job-application',
+                    element: iframe,
+                    identifier: `iframe-${iframe.src}`,
+                    weight: 20
+                });
+            }
+        });
     }
 
     getLabelText(input) {
@@ -480,7 +594,7 @@ class JobApplicationDetector {
     }
 
     async performAutofill() {
-        console.log('🚀 Starting simple autofill...');
+        console.log('🚀 Starting enhanced autofill...');
         
         try {
             // Get user settings
@@ -500,59 +614,153 @@ class JobApplicationDetector {
             const filledFields = [];
             const skippedFields = [];
             
-            // Simple field mapping - just look for these exact IDs
-            const fieldMap = {
-                'first_name': userSettings.firstName,
-                'last_name': userSettings.lastName,
-                'email': userSettings.email,
-                'phone': userSettings.phone
+            // Enhanced field mapping with multiple detection strategies
+            const fieldConfig = {
+                firstName: {
+                    value: userSettings.firstName,
+                    ids: ['first_name', 'firstName', 'first-name', 'fname'],
+                    labels: ['First Name', 'First name', 'first name', 'Given Name', 'Given name']
+                },
+                lastName: {
+                    value: userSettings.lastName,
+                    ids: ['last_name', 'lastName', 'last-name', 'lname', 'surname'],
+                    labels: ['Last Name', 'Last name', 'last name', 'Family Name', 'Family name', 'Surname']
+                },
+                email: {
+                    value: userSettings.email,
+                    ids: ['email', 'email_address', 'emailAddress', 'email-address'],
+                    labels: ['Email', 'Email Address', 'Email address', 'E-mail', 'E-mail Address']
+                },
+                phone: {
+                    value: userSettings.phone,
+                    ids: ['phone', 'phone_number', 'phoneNumber', 'phone-number', 'mobile', 'tel'],
+                    labels: ['Phone', 'Phone Number', 'Phone number', 'Mobile', 'Mobile Number', 'Telephone']
+                }
             };
             
-            // Try to fill each field
-            Object.entries(fieldMap).forEach(([fieldId, value]) => {
-                console.log(`\n🔍 Looking for field: ${fieldId}`);
+            // Try to fill each field type
+            Object.entries(fieldConfig).forEach(([fieldType, config]) => {
+                console.log(`\n🔍 Looking for ${fieldType} field...`);
                 
-                if (!value) {
-                    console.log(`⏭️ No value for ${fieldId}`);
-                    skippedFields.push({ type: fieldId, reason: 'No data available' });
+                if (!config.value) {
+                    console.log(`⏭️ No value for ${fieldType}`);
+                    skippedFields.push({ type: fieldType, reason: 'No data available' });
                     return;
                 }
                 
-                const element = document.getElementById(fieldId);
+                let element = null;
+                let foundMethod = '';
+                
+                // Strategy 1: Try direct ID lookup
+                for (const id of config.ids) {
+                    element = document.getElementById(id);
+                    if (element) {
+                        foundMethod = `ID: ${id}`;
+                        console.log(`✅ Found by ID: ${id}`, element);
+                        break;
+                    }
+                }
+                
+                // Strategy 2: If no ID match, try label-based lookup
                 if (!element) {
-                    console.log(`❌ Element not found: ${fieldId}`);
-                    skippedFields.push({ type: fieldId, reason: 'Element not found' });
+                    console.log(`🏷️ No ID match, trying label-based detection...`);
+                    
+                    for (const labelText of config.labels) {
+                        // Look for labels containing this text
+                        const labels = Array.from(document.querySelectorAll('label'));
+                        const matchingLabel = labels.find(label => 
+                            label.textContent.trim().toLowerCase().includes(labelText.toLowerCase())
+                        );
+                        
+                        if (matchingLabel) {
+                            console.log(`🏷️ Found matching label: "${matchingLabel.textContent.trim()}"`, matchingLabel);
+                            
+                            // Try to find associated input
+                            // Method 1: Check if label has 'for' attribute
+                            if (matchingLabel.htmlFor) {
+                                element = document.getElementById(matchingLabel.htmlFor);
+                                if (element) {
+                                    foundMethod = `Label 'for': ${labelText}`;
+                                    console.log(`✅ Found input via label 'for' attribute:`, element);
+                                    break;
+                                }
+                            }
+                            
+                            // Method 2: Look for input inside the label
+                            if (!element) {
+                                element = matchingLabel.querySelector('input');
+                                if (element) {
+                                    foundMethod = `Label contains input: ${labelText}`;
+                                    console.log(`✅ Found input inside label:`, element);
+                                    break;
+                                }
+                            }
+                            
+                            // Method 3: Look for input immediately after the label
+                            if (!element) {
+                                let nextSibling = matchingLabel.nextElementSibling;
+                                while (nextSibling && !element) {
+                                    if (nextSibling.tagName === 'INPUT' || 
+                                        (nextSibling.tagName === 'DIV' && nextSibling.querySelector('input'))) {
+                                        element = nextSibling.tagName === 'INPUT' ? nextSibling : nextSibling.querySelector('input');
+                                        if (element) {
+                                            foundMethod = `Label sibling: ${labelText}`;
+                                            console.log(`✅ Found input as sibling of label:`, element);
+                                            break;
+                                        }
+                                    }
+                                    nextSibling = nextSibling.nextElementSibling;
+                                }
+                            }
+                        }
+                        
+                        if (element) break; // Found via this label, stop searching
+                    }
+                }
+                
+                // If still no element found
+                if (!element) {
+                    console.log(`❌ No element found for ${fieldType}`);
+                    skippedFields.push({ 
+                        type: fieldType, 
+                        reason: `Element not found (tried IDs: ${config.ids.join(', ')} and labels: ${config.labels.join(', ')})` 
+                    });
                     return;
                 }
                 
-                console.log(`✅ Found element: ${fieldId}`, element);
-                
+                // Fill the found element
                 try {
+                    console.log(`🎯 Filling ${fieldType} (${foundMethod}):`, element);
+                    
                     // Simple fill
                     element.focus();
-                    element.value = value;
+                    element.value = config.value;
                     
                     // Trigger events
                     element.dispatchEvent(new Event('input', { bubbles: true }));
                     element.dispatchEvent(new Event('change', { bubbles: true }));
                     
                     filledFields.push({
-                        type: fieldId,
-                        value: value,
-                        element: element.tagName.toLowerCase()
+                        type: fieldType,
+                        value: config.value,
+                        element: element.tagName.toLowerCase(),
+                        method: foundMethod
                     });
                     
-                    console.log(`✅ Filled ${fieldId}: "${value}"`);
+                    console.log(`✅ Successfully filled ${fieldType}: "${config.value}"`);
                     
                 } catch (error) {
-                    console.error(`❌ Failed to fill ${fieldId}:`, error);
-                    skippedFields.push({ type: fieldId, reason: error.message });
+                    console.error(`❌ Failed to fill ${fieldType}:`, error);
+                    skippedFields.push({ type: fieldType, reason: error.message });
                 }
             });
             
+            const successCount = filledFields.length;
+            const totalAttempted = Object.keys(fieldConfig).length;
+            
             return {
                 success: true,
-                message: 'Simple autofill completed',
+                message: `Enhanced autofill completed: ${successCount}/${totalAttempted} fields filled`,
                 filledFields: filledFields,
                 skippedFields: skippedFields
             };
@@ -649,11 +857,18 @@ const detector = new JobApplicationDetector();
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'PING') {
         // Simple ping/pong to check if content script is ready
-        sendResponse({ status: 'ready' });
+        sendResponse({ 
+            status: 'ready',
+            isInIframe: isInIframe,
+            isJobApplicationIframe: isJobApplicationIframe,
+            url: window.location.href
+        });
     } else if (request.type === 'GET_DETECTION_STATUS') {
         sendResponse({
             isJobApplication: detector.isJobApplication,
             confidence: detector.confidence,
+            isInIframe: isInIframe,
+            isJobApplicationIframe: isJobApplicationIframe,
             detectedFields: detector.detectedFields.map(field => ({
                 type: field.type,
                 identifier: field.identifier,
