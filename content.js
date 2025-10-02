@@ -86,30 +86,127 @@ class JobApplicationDetector {
 
     detectByURL() {
         const url = window.location.href.toLowerCase();
+        const hostname = window.location.hostname.toLowerCase();
+        
+        // Enhanced job-related keywords
         const jobKeywords = [
             'job', 'career', 'apply', 'application', 'position', 
-            'employment', 'hiring', 'recruit', 'vacancy', 'opening'
+            'employment', 'hiring', 'recruit', 'vacancy', 'opening',
+            'work', 'talent', 'opportunity', 'join'
         ];
 
-        const urlMatches = jobKeywords.some(keyword => url.includes(keyword));
-        if (urlMatches) {
-            this.confidence += 20;
-            console.log('✅ URL contains job-related keywords');
+        // Job application URL parameters (strong indicators)
+        const jobUrlParams = [
+            'ashby_jid',        // Ashby job ID
+            'job_id',           // Generic job ID
+            'jobid',            // Job ID variations
+            'position_id',      // Position ID
+            'req_id',           // Requisition ID
+            'application_id',   // Application ID
+            'apply',            // Apply parameter
+            'job-id',           // Hyphenated job ID
+            'posting_id'        // Posting ID
+        ];
+
+        // Career-specific domains/subdomains
+        const careerDomains = [
+            'careers.',
+            'jobs.',
+            'talent.',
+            'apply.',
+            'hiring.',
+            'work.',
+            'opportunities.'
+        ];
+
+        let urlScore = 0;
+        let detectionReasons = [];
+
+        // Check for job keywords in URL
+        const keywordMatches = jobKeywords.filter(keyword => url.includes(keyword));
+        if (keywordMatches.length > 0) {
+            urlScore += keywordMatches.length * 15; // 15 points per keyword
+            detectionReasons.push(`Job keywords: ${keywordMatches.join(', ')}`);
+        }
+
+        // Check for job-related URL parameters (very strong indicator)
+        const paramMatches = jobUrlParams.filter(param => url.includes(param));
+        if (paramMatches.length > 0) {
+            urlScore += paramMatches.length * 25; // 25 points per parameter
+            detectionReasons.push(`Job parameters: ${paramMatches.join(', ')}`);
+        }
+
+        // Check for career-specific domains
+        const domainMatches = careerDomains.filter(domain => hostname.includes(domain));
+        if (domainMatches.length > 0) {
+            urlScore += domainMatches.length * 20; // 20 points per domain
+            detectionReasons.push(`Career domains: ${domainMatches.join(', ')}`);
+        }
+
+        // Apply the score
+        if (urlScore > 0) {
+            this.confidence += Math.min(urlScore, 60); // Cap at 60 points
+            console.log(`✅ URL analysis (+${Math.min(urlScore, 60)} points):`, detectionReasons);
         }
     }
 
     detectByPageContent() {
         const pageText = document.body.innerText.toLowerCase();
+        
+        // Enhanced job application phrases
         const jobPhrases = [
-            'job application', 'apply now', 'submit application',
-            'cover letter', 'resume', 'cv', 'work experience',
-            'employment history', 'position applied for'
+            // Application-specific
+            'job application', 'apply now', 'submit application', 'apply for this position',
+            'application form', 'online application', 'job posting', 'position details',
+            
+            // Document-related
+            'cover letter', 'resume', 'cv', 'curriculum vitae', 'upload resume',
+            'attach resume', 'portfolio', 'work samples',
+            
+            // Experience-related
+            'work experience', 'employment history', 'previous employment',
+            'job history', 'professional experience', 'career background',
+            
+            // Personal info
+            'first name', 'last name', 'full name', 'email address', 
+            'phone number', 'contact information', 'personal details',
+            
+            // Job-specific
+            'position applied for', 'desired position', 'role', 'department',
+            'salary expectations', 'availability', 'start date',
+            
+            // Company-specific
+            'why do you want to work', 'why are you interested', 'tell us about yourself',
+            'what interests you', 'motivation', 'career goals'
         ];
 
-        const contentMatches = jobPhrases.filter(phrase => pageText.includes(phrase));
-        if (contentMatches.length > 0) {
-            this.confidence += Math.min(contentMatches.length * 10, 30);
-            console.log('✅ Page content contains job application phrases:', contentMatches);
+        // Form-related indicators
+        const formIndicators = [
+            'required field', 'mandatory field', '*required', 'please fill',
+            'submit', 'send application', 'apply', 'next step',
+            'upload file', 'browse file', 'choose file', 'drag and drop'
+        ];
+
+        // Check for job phrases
+        const phraseMatches = jobPhrases.filter(phrase => pageText.includes(phrase));
+        let contentScore = 0;
+        
+        if (phraseMatches.length > 0) {
+            contentScore += Math.min(phraseMatches.length * 8, 40); // 8 points per phrase, max 40
+            console.log('✅ Job application phrases found:', phraseMatches.slice(0, 5)); // Show first 5
+        }
+
+        // Check for form indicators
+        const formMatches = formIndicators.filter(indicator => pageText.includes(indicator));
+        if (formMatches.length > 0) {
+            contentScore += Math.min(formMatches.length * 5, 20); // 5 points per indicator, max 20
+            console.log('✅ Form indicators found:', formMatches.slice(0, 3)); // Show first 3
+        }
+
+        // Apply the score
+        if (contentScore > 0) {
+            this.confidence += contentScore;
+            console.log(`✅ Page content analysis: +${contentScore} points`);
         }
     }
 
@@ -118,10 +215,21 @@ class JobApplicationDetector {
         
         // First, let's directly check for the specific fields we know exist
         const directFieldCheck = {
+            // Standard fields
             firstName: document.getElementById('first_name'),
             lastName: document.getElementById('last_name'),
             email: document.getElementById('email'),
-            phone: document.getElementById('phone')
+            phone: document.getElementById('phone'),
+            
+            // Ashby system fields
+            ashbyName: document.getElementById('_systemfield_name'),
+            ashbyEmail: document.getElementById('_systemfield_email'),
+            ashbyPhone: document.getElementById('_systemfield_phone'),
+            
+            // Other common patterns
+            fullName: document.getElementById('name') || document.getElementById('full_name'),
+            userEmail: document.getElementById('user_email'),
+            contactPhone: document.getElementById('contact_phone')
         };
         
         console.log('🎯 Direct field check results:', directFieldCheck);
@@ -156,6 +264,38 @@ class JobApplicationDetector {
         });
         
         const jobFieldPatterns = [
+            // Ashby system fields (very high weight - these are definitive)
+            { 
+                pattern: /^_systemfield_name$/i, 
+                type: 'fullName', 
+                weight: 20,
+                checkAttributes: ['id', 'name']
+            },
+            { 
+                pattern: /^_systemfield_email$/i, 
+                type: 'email', 
+                weight: 20,
+                checkAttributes: ['id', 'name']
+            },
+            { 
+                pattern: /^_systemfield_phone$/i, 
+                type: 'phone', 
+                weight: 20,
+                checkAttributes: ['id', 'name']
+            },
+            { 
+                pattern: /^_systemfield_first_name$/i, 
+                type: 'firstName', 
+                weight: 20,
+                checkAttributes: ['id', 'name']
+            },
+            { 
+                pattern: /^_systemfield_last_name$/i, 
+                type: 'lastName', 
+                weight: 20,
+                checkAttributes: ['id', 'name']
+            },
+            
             // High-weight personal info fields (strong indicators) - more comprehensive patterns
             { 
                 pattern: /first.?name|fname|given.?name|first_name|first$/i, 
@@ -167,6 +307,12 @@ class JobApplicationDetector {
                 pattern: /last.?name|lname|surname|family.?name|last_name|last$/i, 
                 type: 'lastName', 
                 weight: 12,
+                checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
+            },
+            { 
+                pattern: /^name$|full.?name|complete.?name|applicant.?name|candidate.?name/i, 
+                type: 'fullName', 
+                weight: 15,
                 checkAttributes: ['id', 'name', 'placeholder', 'aria-label', 'data-testid', 'class']
             },
             { 
@@ -338,17 +484,63 @@ class JobApplicationDetector {
 
     detectByJobSites() {
         const hostname = window.location.hostname.toLowerCase();
+        const url = window.location.href.toLowerCase();
+        
+        // Major job boards
         const jobSites = [
             'linkedin.com', 'indeed.com', 'glassdoor.com', 'monster.com',
             'ziprecruiter.com', 'careerbuilder.com', 'simplyhired.com',
             'dice.com', 'stackoverflow.com', 'angel.co', 'wellfound.com',
-            'workday.com', 'greenhouse.io', 'lever.co', 'bamboohr.com'
+            'hired.com', 'triplebyte.com', 'vettery.com', 'toptal.com'
         ];
 
-        const isJobSite = jobSites.some(site => hostname.includes(site));
-        if (isJobSite) {
-            this.confidence += 25;
-            console.log('✅ Detected known job site:', hostname);
+        // ATS (Applicant Tracking Systems) providers
+        const atsProviders = [
+            'workday.com', 'greenhouse.io', 'lever.co', 'bamboohr.com',
+            'smartrecruiters.com', 'jobvite.com', 'icims.com', 'taleo.com',
+            'successfactors.com', 'cornerstone.com', 'ultipro.com',
+            'ashbyhq.com', 'recruitee.com', 'personio.com'
+        ];
+
+        let siteScore = 0;
+        let detectionReasons = [];
+
+        // Check for major job boards
+        const jobSiteMatch = jobSites.find(site => hostname.includes(site));
+        if (jobSiteMatch) {
+            siteScore += 30;
+            detectionReasons.push(`Job board: ${jobSiteMatch}`);
+        }
+
+        // Check for ATS providers
+        const atsMatch = atsProviders.find(ats => hostname.includes(ats));
+        if (atsMatch) {
+            siteScore += 35;
+            detectionReasons.push(`ATS provider: ${atsMatch}`);
+        }
+
+        // Special detection for Ashby-powered sites (check URL parameters)
+        if (url.includes('ashby_jid') || url.includes('ashby.com')) {
+            siteScore += 40;
+            detectionReasons.push('Ashby-powered job application');
+        }
+
+        // Check for other ATS indicators in URL
+        const atsIndicators = [
+            'greenhouse_jid', 'lever_jid', 'workday_rid', 
+            'smartrecruiters_jid', 'jobvite_jid', 'icims_id'
+        ];
+        
+        const atsIndicatorMatch = atsIndicators.find(indicator => url.includes(indicator));
+        if (atsIndicatorMatch) {
+            siteScore += 35;
+            detectionReasons.push(`ATS indicator: ${atsIndicatorMatch}`);
+        }
+
+        // Apply the score
+        if (siteScore > 0) {
+            this.confidence += Math.min(siteScore, 50); // Cap at 50 points
+            console.log(`✅ Job site/ATS detection (+${Math.min(siteScore, 50)} points):`, detectionReasons);
         }
     }
 
@@ -616,25 +808,48 @@ class JobApplicationDetector {
             
             // Enhanced field mapping with multiple detection strategies
             const fieldConfig = {
+                // Full name field (common in Ashby and other ATS)
+                fullName: {
+                    value: userSettings.firstName && userSettings.lastName ? 
+                           `${userSettings.firstName} ${userSettings.lastName}` : 
+                           (userSettings.firstName || userSettings.lastName || ''),
+                    ids: [
+                        '_systemfield_name', 'name', 'full_name', 'fullName', 'full-name',
+                        'applicant_name', 'candidate_name', 'user_name', 'userName'
+                    ],
+                    labels: ['Name', 'Full Name', 'Full name', 'Your Name', 'Applicant Name', 'Candidate Name']
+                },
                 firstName: {
                     value: userSettings.firstName,
-                    ids: ['first_name', 'firstName', 'first-name', 'fname'],
+                    ids: [
+                        'first_name', 'firstName', 'first-name', 'fname', 'given_name',
+                        '_systemfield_first_name', 'applicant_first_name'
+                    ],
                     labels: ['First Name', 'First name', 'first name', 'Given Name', 'Given name']
                 },
                 lastName: {
                     value: userSettings.lastName,
-                    ids: ['last_name', 'lastName', 'last-name', 'lname', 'surname'],
+                    ids: [
+                        'last_name', 'lastName', 'last-name', 'lname', 'surname', 'family_name',
+                        '_systemfield_last_name', 'applicant_last_name'
+                    ],
                     labels: ['Last Name', 'Last name', 'last name', 'Family Name', 'Family name', 'Surname']
                 },
                 email: {
                     value: userSettings.email,
-                    ids: ['email', 'email_address', 'emailAddress', 'email-address'],
-                    labels: ['Email', 'Email Address', 'Email address', 'E-mail', 'E-mail Address']
+                    ids: [
+                        'email', 'email_address', 'emailAddress', 'email-address', 'e_mail',
+                        '_systemfield_email', 'applicant_email', 'user_email', 'contact_email'
+                    ],
+                    labels: ['Email', 'Email Address', 'Email address', 'E-mail', 'E-mail Address', 'Contact Email']
                 },
                 phone: {
                     value: userSettings.phone,
-                    ids: ['phone', 'phone_number', 'phoneNumber', 'phone-number', 'mobile', 'tel'],
-                    labels: ['Phone', 'Phone Number', 'Phone number', 'Mobile', 'Mobile Number', 'Telephone']
+                    ids: [
+                        'phone', 'phone_number', 'phoneNumber', 'phone-number', 'mobile', 'tel',
+                        '_systemfield_phone', 'applicant_phone', 'contact_phone', 'mobile_number'
+                    ],
+                    labels: ['Phone', 'Phone Number', 'Phone number', 'Mobile', 'Mobile Number', 'Telephone', 'Contact Phone']
                 }
             };
             
