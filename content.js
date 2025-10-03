@@ -1,4 +1,3 @@
-// Job Application Form Detection Content Script - Fully functional approach
 import { isJobApplicationIframe } from './src/detection-utils.js';
 import {
     detectJobApplication,
