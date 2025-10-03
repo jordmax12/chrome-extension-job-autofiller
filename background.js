@@ -1,5 +1,3 @@
-// Background script for Chrome extension with live reload support
-
 console.log('🚀 Background script loaded');
 
 // Live reload functionality for development
